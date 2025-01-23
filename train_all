@@ -1,0 +1,5 @@
+#!/bin/bash
+OUTPUTDIR="results"
+mkdir -p "$OUTPUTDIR"
+python3 "./train_aggregation.py" "$OUTPUTDIR/aggregation"
+python3 "./train_boid.py" "$OUTPUTDIR/boid" --num_cases 10
