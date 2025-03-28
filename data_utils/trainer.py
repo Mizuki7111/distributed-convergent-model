@@ -16,6 +16,10 @@ logging.basicConfig(
 
 
 class Trainer:
+    """
+    A class to train a model with a given criterion and regularizers.
+    """
+
     def __init__(
         self,
         criterion: Module,

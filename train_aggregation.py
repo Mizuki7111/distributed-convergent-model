@@ -80,11 +80,13 @@ def simulate_aggregation(
 
 
 def learning_models(args, save_dir):
+    # Create save directory
     os.makedirs(f"{save_dir}/projection", exist_ok=True)
     os.makedirs(f"{save_dir}/hamiltonian", exist_ok=True)
     os.makedirs(f"{save_dir}/singlempnn", exist_ok=True)
     V_SAVE_RANGE = [-5.0, 5.0]
     logger.info("Start simulation")
+    # Simulate data
     (
         data_train,
         graph_train,
@@ -110,6 +112,7 @@ def learning_models(args, save_dir):
     np.save(f"{save_dir}/data_test.npy", data_test)
     with open(f"{save_dir}/graph_test.pkl", "wb") as f:
         pickle.dump([g.tolist() for g in graph_test], f)
+    # Transform data to dataset
     data_test = data_test[:, 0]
     graph_test = [torch.from_numpy(g) for g in graph_test]
     model_dim = 1
@@ -118,13 +121,16 @@ def learning_models(args, save_dir):
     data_validation = datasets.StaticGraphDataset(
         data_validation, graph_validation, args.dt
     )
+    # Setup trainer
     reg = []
     if sum(args.l1reg) > 0.0:
         reg.append(trainer.L1Reguralizer(*args.l1reg))
     if sum(args.l2reg) > 0.0:
         reg.append(trainer.L2Reguralizer(*args.l2reg))
     trainer_ = trainer.Trainer(torch.nn.MSELoss(), regularizers=reg)
+    # Start process for projection model
     logger.info("Start training projection model")
+    # Setup projection model
     v_pro = models.Vfunc(
         [models.PairwiseFunction(model_dim, args.dim_hid, 1, args.num_layers)],
         [
@@ -151,7 +157,9 @@ def learning_models(args, save_dir):
     )
     projection_model = models.ProjectionModel(fhat, v_pro)
     logger.debug(summary(projection_model, verbose=0))
+    # Setup optimizer
     projection_optimizer = torch.optim.Adam(projection_model.parameters(), lr=args.lr)
+    # Train projection model
     _ = trainer_.train(
         model=projection_model,
         dataset=data_train,
@@ -161,6 +169,7 @@ def learning_models(args, save_dir):
         varidation_dataset=data_validation,
         log_path=f"{save_dir}/projection",
     )
+    # Test projection model by long term prediction and mapping scalar function
     logger.info("Start prediction with projection model")
     test_result = test_models.long_term_prediction(
         projection_model, data_test, args.sim_steps, args.dt, graph=graph_test
@@ -199,7 +208,9 @@ def learning_models(args, save_dir):
     )
     del projection_model, projection_optimizer, v_pro, fhat
 
+    # Start process for Hamiltonian model
     logger.info("Start training Hamiltonian model")
+    # Setup Hamiltonian model
     v_pro = models.Vfunc(
         [models.PairwiseFunction(model_dim, args.dim_hid, 1, args.num_layers)],
         [
@@ -239,7 +250,9 @@ def learning_models(args, save_dir):
     logger.debug(
         f"r_mat -> SingleMPNN: {model_dim}, {args.dim_hid}, {model_dim**2}, {args.num_layers}, {args.num_layers}"
     )
+    # Setup optimizer
     hamiltonian_optimizer = torch.optim.Adam(hamiltonian_model.parameters(), lr=args.lr)
+    # Train Hamiltonian model
     _ = trainer_.train(
         model=hamiltonian_model,
         dataset=data_train,
@@ -249,6 +262,7 @@ def learning_models(args, save_dir):
         varidation_dataset=data_validation,
         log_path=f"{save_dir}/hamiltonian",
     )
+    # Test Hamiltonian model by long term prediction and mapping scalar function
     logger.info("Start prediction with Hamiltonian model")
     test_result = test_models.long_term_prediction(
         hamiltonian_model, data_test, args.sim_steps, args.dt, graph=graph_test
@@ -287,7 +301,9 @@ def learning_models(args, save_dir):
     np.save(f"{save_dir}/hamiltonian/best_prediction.npy", test_result)
     del hamiltonian_model, hamiltonian_optimizer, v_pro, j_mat, r_mat
 
+    # Start process for SingleMPNN model
     logger.info("Start training SingleMPNN model")
+    # Setup SingleMPNN model
     singlempnn = models.SingleMPNN(
         model_dim,
         args.dim_hid,
@@ -301,7 +317,9 @@ def learning_models(args, save_dir):
     logger.debug(
         f"SingleMPNN: {model_dim}, {args.dim_hid}, {model_dim}, {int(args.num_layers * 2.5)}, {int(args.num_layers * 2.5)}"
     )
+    # Setup optimizer
     singlempnn_optimizer = torch.optim.Adam(singlempnn.parameters(), lr=args.lr)
+    # Train SingleMPNN model
     _ = trainer_.train(
         model=singlempnn,
         dataset=data_train,
@@ -322,6 +340,7 @@ def learning_models(args, save_dir):
     )
     np.save(f"{save_dir}/singlempnn/final_prediction.npy", test_result)
     singlempnn.load_state_dict(torch.load(f"{save_dir}/singlempnn/best_model.pth"))
+    # Test SingleMPNN model by long term prediction
     test_result = test_models.long_term_prediction(
         singlempnn,
         data_test,

@@ -38,7 +38,23 @@ The results are saved in the directories `result/aggregation` and `result/boid`.
 >The training may take a long time.
 >It is recommended to run the training of Boids or both on a machine with a GPU.
 
+### Visualize results
+See visualize_aggregation.ipynb for aggregation and visualize_boids.ipynb for Boids.
+
 ## Implementation
+### The roles of each Python files
+#### In `data_utils`
+- `datasets.py`: define classes generating dataset of the class `torch.utils.data.Dataset` from the sequence of the data of the class `numpy.ndarray`.
+- `simulate_data.py`: define classes generating the sequence of the data of the class `numpy.ndarray` from the initial condition and the parameters.
+- `test_models.py`: define methods testing the trained model by predicting the future trajectory of the initial condition and by mapping the scalar function.
+- `trainer.py`: define the class `Trainer` for training the model.
+#### In `model`
+- `graph_utils.py`: define methods treating graphs.
+- `model.py`: define classes of the models.
+#### Below this repositry
+- `train_aggregation.py`: run the training of the aggregation model.
+- `train_boids.py`: run the training of the Boids model.
+
 ### Graph utility
 Consider a graph $(\mathcal{N},\mathcal{E})$ with node set $\mathcal{N}\triangleq\{1,...,n\}$ and edge set $\mathcal{E}\in\mathcal{N}\times\mathcal{N}$ and vectors $x_1,...,x_n$ indexed by $\mathcal{N}$.
 To treat the edge set, this repositry use two arrays `row` and `col`.

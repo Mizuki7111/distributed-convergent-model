@@ -83,6 +83,9 @@ class Simulator:
         return self.simulate(steps, x0, dt, *args, **kwds)
 
     def simulate(self, steps: int, x0: ndarray, dt: float, *args, **kwds) -> ndarray:
+        """
+        Simulate the system for a given number of steps.
+        """
         shape = x0.shape
         result = np.zeros((steps, *shape))
         transform = kwds["transform"] if "transform" in kwds else lambda x: x
@@ -94,6 +97,9 @@ class Simulator:
         return result
 
     def step(self, x: ndarray, stp: int, *args, **kwds):
+        """
+        update the state of the system from the current state.
+        """
         return x
 
 
